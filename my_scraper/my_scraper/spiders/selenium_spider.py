@@ -9,6 +9,9 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 import time
+from selenium.webdriver.support import expected_conditions as ec
+
+import json
 
 # Define the XPaths you are using
 SELECTOR = {
@@ -19,6 +22,10 @@ SELECTOR = {
         'price':     '/html/body/div[1]/div/div[2]/div/div[1]/div[4]/div/div/div[5]/div/div/div/div[2]/div/div[1]/div/div/div[4]/div/div[{}]/div/article/div/div/div[1]/div/div[3]/div[2]/div/div/a/div/div/div/div/div'
 }
 
+'''
+
+/html/body/div[1]/div/div[2]/div/div[1]/div[4]/div/div/div[5]/div/div/div/div[2]/div/div[1]/div/div/div[2]/div/div[2]/div/article/div/div/div[1]/div/div[3]/div/div/div/a/div/div[2]/span[1]/span[1]
+'''
 
 class SeleniumSpider(scrapy.Spider):
     name = 'selenium_spider'
@@ -48,17 +55,19 @@ class SeleniumSpider(scrapy.Spider):
     def is_element_present(self, xpath):
         """Check if an element exists by its XPath."""
         try:
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, xpath)))
+            wait = WebDriverWait(self.driver, 5)
+            wait.until(ec.presence_of_element_located((By.XPATH, xpath)))
+            print(f'{xpath=} is present.')
             return True
         except TimeoutException:
+            print(f'{xpath=} is not present.')
             return False
 
     def click_element(self, xpath):
         """Click an element based on its XPath."""
         try:
-            element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            element = self.driver.find_element(by=By.XPATH, value=xpath)
             element.click()
-            print(f"Clicked on element with XPath: {xpath}")
         except (NoSuchElementException, TimeoutException) as e:
             print(f"Error clicking element: {e}")
 
@@ -72,7 +81,7 @@ class SeleniumSpider(scrapy.Spider):
     def scrape_data(self):
         """Scrape data from the items on the page."""
         data = {}
-        for i in range(4, 1000):  # Adjust range as needed
+        for i in range(4, 30):  # Adjust range as needed
             item_xpath = SELECTOR['item_name'].format(i)
             # item_price = SELECTOR['price'].format(i)
             try:
@@ -84,11 +93,8 @@ class SeleniumSpider(scrapy.Spider):
                     data[i] = {'item_name': '', 'item_price': ''}
                     data[i]['item_name'] = element.text
                     # data[i]['item_price'] = price.text
-                    print(f"Item {i}: {data[i]}")
-                else:
-                    print(f"Item not found at index {i}")
             except NoSuchElementException:
-                print(f"No element found for index {i}")
+                pass
         return data
 
     def parse(self, response):
@@ -97,12 +103,17 @@ class SeleniumSpider(scrapy.Spider):
         time.sleep(2)
 
         # Handle popups if present
-        if self.is_element_present(SELECTOR['ads_exit']):
-            self.click_element(SELECTOR['ads_exit'])
+        # if self.is_element_present(SELECTOR['ads_exit']):
+        self.click_element(SELECTOR['ads_exit'])
 
-        self.scroll_page(30)
+        self.scroll_page(10)
         # time.sleep(100)
         scraped_data = self.scrape_data()
         print(f"Scraped Data: {scraped_data}")
         #
         self.driver.quit()
+
+        import random
+
+        with open(f"your_json_file{random.randint(1, 100000)}", "w") as fp:
+            json.dump(scraped_data, fp)

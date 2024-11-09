@@ -6,6 +6,7 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+from scrapy.settings.default_settings import LOG_ENABLED
 
 BOT_NAME = "my_scraper"
 
@@ -94,4 +95,4 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 ROBOTSTXT_OBEY = False
 DOWNLOAD_DELAY = 2
-
+LOG_ENABLED = False
